@@ -134,8 +134,8 @@ def train(args):
                                          tm, c, m_c, cl], use_cuda=USE_CUDA)
             loss_, acc_ = model(dw, dt, qw, qt, a, m_dw, m_qw, tt,
                                 tm, c, m_c, cl, fnames)
-            loss += loss_.cpu().data.numpy()[0]
-            acc += acc_.cpu().data.numpy()[0]
+            loss += float(loss_.cpu().data.numpy())
+            acc += float(acc_.cpu().data.numpy())
             it += 1
             opt.zero_grad()
             loss_.backward()

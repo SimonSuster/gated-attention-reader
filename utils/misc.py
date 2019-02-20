@@ -126,8 +126,8 @@ def evaluate(model, data, use_cuda):
                                      evaluate=True)
         loss_, acc_ = model(dw, dt, qw, qt, a, m_dw, m_qw, tt,
                             tm, c, m_c, cl, fnames)
-        _loss = loss_.cpu().data.numpy()[0]
-        _acc = acc_.cpu().data.numpy()[0]
+        _loss = float(loss_.cpu().data.numpy())
+        _acc = float(acc_.cpu().data.numpy())
         loss += _loss
         acc += _acc
         tr.set_description("loss: {:.3f}, acc: {:.3f}".

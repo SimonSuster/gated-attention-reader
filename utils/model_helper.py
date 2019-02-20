@@ -28,7 +28,7 @@ def gated_attention(doc, qry, inter, mask, gating_fn='tmul'):
     alphas_r = F.softmax(inter.view(-1, inter.size(-1))).view_as(inter) * \
         mask.unsqueeze(1).float().expand_as(inter)
     alphas_r = alphas_r / \
-        torch.sum(alphas_r, dim=2).expand_as(alphas_r)  # B x N x Q
+        torch.sum(alphas_r, dim=2, keepdim=True).expand_as(alphas_r)  # B x N x Q
     q_rep = torch.bmm(alphas_r, qry)  # B x N x D
     return eval(gating_fn)(doc, q_rep)
 
@@ -53,7 +53,7 @@ def attention_sum(doc, qry, cand, cloze, cand_mask):
     p = torch.squeeze(
         torch.bmm(doc, q.unsqueeze(dim=-1)), dim=-1)  # B x N
     pm = F.softmax(p) * cand_mask.float()  # B x N
-    pm = pm / torch.sum(pm, dim=1).expand_as(pm)  # B x N
+    pm = pm / torch.sum(pm, dim=1, keepdim=True).expand_as(pm)  # B x N
     pm = pm.unsqueeze(1)  # B x 1 x N
     return torch.squeeze(
         torch.bmm(pm, cand.float()), dim=1)  # B x C
