@@ -132,4 +132,4 @@ class GAReader(nn.Module):
         loss = torch.mean(crossentropy(pred, target.long()))
         prob, pred_ans = torch.max(pred, dim=1)
         acc = torch.sum(torch.eq(pred_ans, target.long()))
-        return loss, acc
+        return loss, acc, pred_ans

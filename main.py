@@ -13,7 +13,7 @@ import logging
 from torch.nn.utils import clip_grad_norm
 from utils.data_preprocessor import data_preprocessor
 from utils.minibatch_loader import minibatch_loader
-from utils.misc import to_vars, evaluate, check_dir, load_word2vec_embeddings
+from utils.misc import to_vars, evaluate, check_dir, load_word2vec_embeddings, save_json, clicr_eval
 from model import GAReader
 
 USE_CUDA = torch.cuda.is_available()
@@ -132,7 +132,7 @@ def train(args):
             dw, dt, qw, qt, a, m_dw, m_qw, tt, \
                 tm, c, m_c, cl = to_vars([dw, dt, qw, qt, a, m_dw, m_qw, tt,
                                          tm, c, m_c, cl], use_cuda=USE_CUDA)
-            loss_, acc_ = model(dw, dt, qw, qt, a, m_dw, m_qw, tt,
+            loss_, acc_, preds_ = model(dw, dt, qw, qt, a, m_dw, m_qw, tt,
                                 tm, c, m_c, cl, fnames)
             loss += float(loss_.cpu().data.numpy())
             acc += float(acc_.cpu().data.numpy())
@@ -158,7 +158,7 @@ def train(args):
             if it % args.eval_every == 0:
                 start = time.time()
                 model.eval()
-                test_loss, test_acc = evaluate(
+                test_loss, test_acc, _ = evaluate(
                     model, valid_batch_loader, USE_CUDA)
                 spend = (time.time() - start) / 60
                 logging.info("Valid loss: {:.3f}, acc: {:.3f}, time: {:.1f}(m)"
@@ -170,14 +170,22 @@ def train(args):
                 start = time.time()
         start = time.time()
         model.eval()
-        test_loss, test_acc = evaluate(
-            model, test_batch_loader, USE_CUDA)
+        test_loss, test_acc, test_preds = evaluate(
+            model, test_batch_loader, USE_CUDA, data.inv_dictionary)
         spend = (time.time() - start) / 60
         logging.info("Test loss: {:.3f}, acc: {:.3f}, time: {:.1f}(m)"
                      .format(test_loss, test_acc, spend))
         if best_test_acc < test_acc:
             best_test_acc = test_acc
         logging.info("Best test acc: {:.3f}".format(best_test_acc))
+        if test_preds is not None and args.save_dir is not None:
+            check_dir(args.save_dir, exit_function=False)
+            save_json(test_preds, args.save_dir+"/test_preds.json")
+            with open(args.save_dir+"/config", "w") as outf:
+                outf.write(str(args))
+            logging.info("Running external Clicr evaluation.")
+            clicr_eval(path_test="/mnt/b5320167-5dbd-4498-bf34-173ac5338c8d/Datasets/bmj_case_reports_data/dataset_json_concept_annotated/test1.0.json",
+                path_preds=args.save_dir+"/test_preds.json", save_to=args.save_dir+"/test_preds.json.results")
 
 
 if __name__ == "__main__":
